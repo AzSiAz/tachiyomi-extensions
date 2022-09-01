@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload APKs (chunk ${{ matrix.chunk }})
         uses: actions/upload-artifact@v2
-        if: "github.repository == 'tachiyomiorg/tachiyomi-extensions'"
+        if: "github.repository == 'AzSiAz/tachiyomi-extensions'"
         with:
           name: "multisrc-apks-${{ matrix.chunk }}"
           path: "**/*.apk"
@@ -149,7 +149,7 @@ jobs:
 
       - name: Upload APKs (chunk ${{ matrix.chunk }})
         uses: actions/upload-artifact@v2
-        if: "github.repository == 'tachiyomiorg/tachiyomi-extensions'"
+        if: "github.repository == 'AzSiAz/tachiyomi-extensions'"
         with:
           name: "individual-apks-${{ matrix.chunk }}"
           path: "**/*.apk"
@@ -163,7 +163,7 @@ jobs:
     needs:
       - build_multisrc
       - build_individual
-    if: "github.repository == 'tachiyomiorg/tachiyomi-extensions'"
+    if: "github.repository == 'AzSiAz/tachiyomi-extensions'"
     runs-on: ubuntu-latest
     steps:
       - name: Download APK artifacts
@@ -191,14 +191,3 @@ jobs:
           curl -L "$INSPECTOR_LINK" -o ./Inspector.jar
           java -jar ./Inspector.jar "apk" "output.json" "tmp"
           ./.github/scripts/create-repo.sh
-
-      - name: Checkout repo branch
-        uses: actions/checkout@v3
-        with:
-          ref: repo
-          path: repo
-
-      - name: Deploy repo
-        run: |
-          cd repo
-          ../master/.github/scripts/commit-repo.sh
