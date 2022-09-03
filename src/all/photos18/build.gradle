@@ -2,10 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 ext {
-    extName = 'Koushoku'
-    pkgNameSuffix = 'en.koushoku'
-    extClass = '.Koushoku'
-    extVersionCode = 15
+    extName = 'Photos18'
+    pkgNameSuffix = 'all.photos18'
+    extClass = '.Photos18'
+    extVersionCode = 1
     isNsfw = true
 }
 
