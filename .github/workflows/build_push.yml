@@ -192,3 +192,14 @@ jobs:
           curl -L "$INSPECTOR_LINK" -o ./Inspector.jar
           java -jar ./Inspector.jar "apk" "output.json" "tmp"
           ./.github/scripts/create-repo.sh
+
+      - name: Checkout repo branch
+        uses: actions/checkout@v3
+        with:
+          ref: repo
+          path: repo
+
+      - name: Deploy repo
+        run: |
+          cd repo
+          ../master/.github/scripts/commit-repo.sh
