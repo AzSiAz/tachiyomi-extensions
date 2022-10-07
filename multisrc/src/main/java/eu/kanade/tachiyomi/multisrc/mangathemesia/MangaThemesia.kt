@@ -30,12 +30,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+// Formerly WPMangaStream & WPMangaReader -> MangaThemesia
 abstract class MangaThemesia(
     override val name: String,
     override val baseUrl: String,
     override val lang: String,
     val mangaUrlDirectory: String = "/manga",
-    private val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
+    val dateFormat: SimpleDateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
 ) : ParsedHttpSource() {
 
     protected open val json: Json by injectLazy()
@@ -81,43 +82,42 @@ abstract class MangaThemesia(
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = baseUrl.toHttpUrl().newBuilder()
-        if (query.isNotEmpty()) {
-            url.addPathSegments("page/$page").addQueryParameter("s", query)
-        } else {
-            url.addPathSegment(mangaUrlDirectory.substring(1)).addQueryParameter("page", page.toString())
-            filters.forEach { filter ->
-                when (filter) {
-                    is AuthorFilter -> {
-                        url.addQueryParameter("author", filter.state)
-                    }
-                    is YearFilter -> {
-                        url.addQueryParameter("yearx", filter.state)
-                    }
-                    is StatusFilter -> {
-                        url.addQueryParameter("status", filter.selectedValue())
-                    }
-                    is TypeFilter -> {
-                        url.addQueryParameter("type", filter.selectedValue())
-                    }
-                    is OrderByFilter -> {
-                        url.addQueryParameter("order", filter.selectedValue())
-                    }
-                    is GenreListFilter -> {
-                        filter.state
-                            .filter { it.state != Filter.TriState.STATE_IGNORE }
-                            .forEach {
-                                val value = if (it.state == Filter.TriState.STATE_EXCLUDE) "-${it.value}" else it.value
-                                url.addQueryParameter("genre[]", value)
-                            }
-                    }
-                    // if site has project page, default value "hasProjectPage" = false
-                    is ProjectFilter -> {
-                        if (filter.selectedValue() == "project-filter-on") {
-                            url.setPathSegment(0, projectPageString.substring(1))
-                        }
-                    }
-                    else -> { /* Do Nothing */ }
+            .addPathSegment(mangaUrlDirectory.substring(1))
+            .addQueryParameter("title", query)
+            .addQueryParameter("page", page.toString())
+
+        filters.forEach { filter ->
+            when (filter) {
+                is AuthorFilter -> {
+                    url.addQueryParameter("author", filter.state)
                 }
+                is YearFilter -> {
+                    url.addQueryParameter("yearx", filter.state)
+                }
+                is StatusFilter -> {
+                    url.addQueryParameter("status", filter.selectedValue())
+                }
+                is TypeFilter -> {
+                    url.addQueryParameter("type", filter.selectedValue())
+                }
+                is OrderByFilter -> {
+                    url.addQueryParameter("order", filter.selectedValue())
+                }
+                is GenreListFilter -> {
+                    filter.state
+                        .filter { it.state != Filter.TriState.STATE_IGNORE }
+                        .forEach {
+                            val value = if (it.state == Filter.TriState.STATE_EXCLUDE) "-${it.value}" else it.value
+                            url.addQueryParameter("genre[]", value)
+                        }
+                }
+                // if site has project page, default value "hasProjectPage" = false
+                is ProjectFilter -> {
+                    if (filter.selectedValue() == "project-filter-on") {
+                        url.setPathSegment(0, projectPageString.substring(1))
+                    }
+                }
+                else -> { /* Do Nothing */ }
             }
         }
         return GET(url.toString())
@@ -290,7 +290,7 @@ abstract class MangaThemesia(
     }
 
     /**
-     * Send the view count request to the Madara endpoint.
+     * Send the view count request to the sites endpoint.
      *
      * @param document The response document with the wp-manga data
      */
@@ -363,7 +363,12 @@ abstract class MangaThemesia(
         )
     )
 
-    protected class Genre(name: String, val value: String) : Filter.TriState(name)
+    protected class Genre(
+        name: String,
+        val value: String,
+        state: Int = STATE_IGNORE
+    ) : Filter.TriState(name, state)
+
     protected class GenreListFilter(genres: List<Genre>) : Filter.Group<Genre>("Genre", genres)
 
     private var genrelist: List<Genre>? = null
@@ -378,7 +383,6 @@ abstract class MangaThemesia(
 
     override fun getFilterList(): FilterList {
         val filters = mutableListOf<Filter<*>>(
-            Filter.Header("NOTE: Ignored if using text search!"),
             Filter.Separator(),
             AuthorFilter(),
             YearFilter(),

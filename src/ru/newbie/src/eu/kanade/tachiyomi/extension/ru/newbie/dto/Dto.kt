@@ -44,13 +44,7 @@ data class AuthorDto(
 
 @Serializable
 data class ImgDto(
-    val srcset: ImgsDto,
-)
-
-@Serializable
-data class ImgsDto(
-    val large: String,
-    val small: String,
+    val name: String,
 )
 
 @Serializable
@@ -107,6 +101,7 @@ data class SearchLibraryDto(
 data class DocElementsDto(
     val id: String,
     val title_en: String,
+    val title_ru: String,
     val image_large: String,
     val image_small: String
 )
