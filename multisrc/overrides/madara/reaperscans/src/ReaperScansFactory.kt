@@ -10,7 +10,6 @@ import java.util.Locale
 
 class ReaperScansFactory : SourceFactory {
     override fun createSources() = listOf(
-        ReaperScansEn(),
         ReaperScansTr(),
         ReaperScansId(),
         ReaperScansFr()
@@ -38,15 +37,6 @@ abstract class ReaperScans(
 
         setUrlWithoutDomain(fixedUrl)
     }
-}
-
-class ReaperScansEn : ReaperScans(
-    "https://reaperscans.com",
-    "en",
-    SimpleDateFormat("MMM dd,yyyy", Locale.US)
-) {
-
-    override val versionId = 2
 }
 
 class ReaperScansTr : ReaperScans(
