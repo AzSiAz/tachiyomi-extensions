@@ -4,6 +4,7 @@ import eu.kanade.tachiyomi.multisrc.madara.Madara
 import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
@@ -14,7 +15,7 @@ class SinensisScan : Madara(
     "Sinensis Scan",
     "https://sinensisscans.com",
     "pt-BR",
-    SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+    SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")),
 ) {
 
     // Name changed from Sinensis to Sinensis Scan
@@ -26,19 +27,30 @@ class SinensisScan : Madara(
 
     override fun popularMangaFromElement(element: Element): SManga {
         return super.popularMangaFromElement(element).apply {
-            url = url.removePrefix("/home")
+            setUrlWithoutDomain(url.removeBadPath("manga"))
         }
     }
 
     override fun searchMangaFromElement(element: Element): SManga {
         return super.searchMangaFromElement(element).apply {
-            url = url.removePrefix("/home")
+            setUrlWithoutDomain(url.removeBadPath("manga"))
         }
     }
 
     override fun chapterFromElement(element: Element): SChapter {
         return super.chapterFromElement(element).apply {
-            url = url.removePrefix("/home")
+            setUrlWithoutDomain(url.removeBadPath("manga"))
         }
+    }
+
+    private fun String.removeBadPath(expectedFirstPath: String): String {
+        val fullUrl = if (contains(baseUrl)) this else (baseUrl + this)
+        val url = fullUrl.toHttpUrl()
+
+        if (url.pathSegments.firstOrNull() != expectedFirstPath) {
+            return url.newBuilder().removePathSegment(0).toString()
+        }
+
+        return url.toString()
     }
 }

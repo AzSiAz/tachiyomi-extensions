@@ -6,7 +6,41 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import java.text.SimpleDateFormat
-import java.util.Locale
+
+@Serializable
+data class HeanCmsQuerySearchDto(
+    val data: List<HeanCmsSeriesDto> = emptyList(),
+    val meta: HeanCmsQuerySearchMetaDto? = null,
+)
+
+@Serializable
+data class HeanCmsQuerySearchMetaDto(
+    @SerialName("current_page") val currentPage: Int,
+    @SerialName("last_page") val lastPage: Int,
+) {
+
+    val hasNextPage: Boolean
+        get() = currentPage < lastPage
+}
+
+@Serializable
+data class HeanCmsSearchDto(
+    val description: String? = null,
+    @SerialName("series_slug") var slug: String,
+    @SerialName("series_type") val type: String,
+    val title: String,
+    val thumbnail: String? = null,
+) {
+
+    fun toSManga(
+        apiUrl: String,
+        coverPath: String,
+    ): SManga = SManga.create().apply {
+        title = this@HeanCmsSearchDto.title
+        thumbnail_url = thumbnail?.toAbsoluteThumbnailUrl(apiUrl, coverPath)
+        url = "/series/$slug"
+    }
+}
 
 @Serializable
 data class HeanCmsSeriesDto(
@@ -20,10 +54,14 @@ data class HeanCmsSeriesDto(
     val thumbnail: String,
     val title: String,
     val tags: List<HeanCmsTagDto>? = emptyList(),
-    val chapters: List<HeanCmsChapterDto>? = emptyList()
+    val chapters: List<HeanCmsChapterDto>? = emptyList(),
+    val seasons: List<HeanCmsSeasonsDto>? = emptyList(),
 ) {
 
-    fun toSManga(apiUrl: String): SManga = SManga.create().apply {
+    fun toSManga(
+        apiUrl: String,
+        coverPath: String,
+    ): SManga = SManga.create().apply {
         val descriptionBody = this@HeanCmsSeriesDto.description?.let(Jsoup::parseBodyFragment)
 
         title = this@HeanCmsSeriesDto.title
@@ -35,17 +73,18 @@ data class HeanCmsSeriesDto(
         genre = tags.orEmpty()
             .sortedBy(HeanCmsTagDto::name)
             .joinToString { it.name }
-        thumbnail_url = "$apiUrl/cover/$thumbnail"
-        status = when (this@HeanCmsSeriesDto.status) {
-            "Ongoing" -> SManga.ONGOING
-            "Hiatus" -> SManga.ON_HIATUS
-            "Dropped" -> SManga.CANCELLED
-            "Completed", "Finished" -> SManga.COMPLETED
-            else -> SManga.UNKNOWN
-        }
-        url = "/series/${slug.replace(HeanCms.TIMESTAMP_REGEX, "")}"
+        thumbnail_url = thumbnail.ifEmpty { null }
+            ?.toAbsoluteThumbnailUrl(apiUrl, coverPath)
+        status = this@HeanCmsSeriesDto.status?.toStatus() ?: SManga.UNKNOWN
+        url = "/series/$slug"
     }
 }
+
+@Serializable
+data class HeanCmsSeasonsDto(
+    val index: Int,
+    val chapters: List<HeanCmsChapterDto>? = emptyList(),
+)
 
 @Serializable
 data class HeanCmsTagDto(val name: String)
@@ -57,37 +96,48 @@ data class HeanCmsChapterDto(
     @SerialName("chapter_slug") val slug: String,
     val index: String,
     @SerialName("created_at") val createdAt: String,
+    val price: Int? = null,
 ) {
 
-    fun toSChapter(seriesSlug: String): SChapter = SChapter.create().apply {
+    fun toSChapter(seriesSlug: String, dateFormat: SimpleDateFormat): SChapter = SChapter.create().apply {
         name = this@HeanCmsChapterDto.name.trim()
-        date_upload = runCatching { DATE_FORMAT.parse(createdAt.substringBefore("."))?.time }
+        date_upload = runCatching { dateFormat.parse(createdAt)?.time }
             .getOrNull() ?: 0L
         url = "/series/$seriesSlug/$slug#$id"
-    }
-
-    companion object {
-        private val DATE_FORMAT by lazy {
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
-        }
     }
 }
 
 @Serializable
 data class HeanCmsReaderDto(
-    val content: HeanCmsReaderContentDto? = null
+    val content: HeanCmsReaderContentDto? = null,
 )
 
 @Serializable
 data class HeanCmsReaderContentDto(
-    val images: List<String>? = emptyList()
+    val images: List<String>? = emptyList(),
 )
 
 @Serializable
-data class HeanCmsSearchDto(
+data class HeanCmsQuerySearchPayloadDto(
     val order: String,
+    val page: Int,
     @SerialName("order_by") val orderBy: String,
-    @SerialName("series_status") val status: String,
+    @SerialName("series_status") val status: String? = null,
     @SerialName("series_type") val type: String,
-    @SerialName("tags_ids") val tagIds: List<Int> = emptyList()
+    @SerialName("tags_ids") val tagIds: List<Int> = emptyList(),
 )
+
+@Serializable
+data class HeanCmsSearchPayloadDto(val term: String)
+
+private fun String.toAbsoluteThumbnailUrl(apiUrl: String, coverPath: String): String {
+    return if (startsWith("https://")) this else "$apiUrl/$coverPath$this"
+}
+
+fun String.toStatus(): Int = when (this) {
+    "Ongoing" -> SManga.ONGOING
+    "Hiatus" -> SManga.ON_HIATUS
+    "Dropped" -> SManga.CANCELLED
+    "Completed", "Finished" -> SManga.COMPLETED
+    else -> SManga.UNKNOWN
+}

@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.extension.zh.dmzj
 
+import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SManga
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -12,7 +13,7 @@ const val PREFIX_ID_SEARCH = "id:"
 val json: Json by injectLazy()
 
 inline fun <reified T> Response.parseAs(): T {
-    return json.decodeFromString(body!!.string())
+    return json.decodeFromString(body.string())
 }
 
 fun getMangaUrl(id: String) = "/comic/comic_$id.json?version=2.7.019"
@@ -39,10 +40,17 @@ fun String.formatChapterName(): String {
     return "第$number$type"
 }
 
-fun String.toHttps() = "https:" + substringAfter(':')
-
-// see https://github.com/tachiyomiorg/tachiyomi-extensions/issues/3457
-fun String.fixFilename() = if (endsWith(".jp")) this + 'g' else this
+fun parsePageList(
+    images: List<String>,
+    lowResImages: List<String> = List(images.size) { "" },
+): ArrayList<Page> {
+    val pageCount = images.size
+    val list = ArrayList<Page>(pageCount + 1) // for comments page
+    for (i in 0 until pageCount) {
+        list.add(Page(i, lowResImages[i], images[i]))
+    }
+    return list
+}
 
 fun String.decodePath(): String = URLDecoder.decode(this, "UTF-8")
 

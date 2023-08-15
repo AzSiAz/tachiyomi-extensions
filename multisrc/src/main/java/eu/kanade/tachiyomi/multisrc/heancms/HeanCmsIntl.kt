@@ -16,6 +16,12 @@ class HeanCmsIntl(lang: String) {
         else -> "Status"
     }
 
+    val statusAll: String = when (availableLang) {
+        BRAZILIAN_PORTUGUESE -> "Todos"
+        SPANISH -> "Todos"
+        else -> "All"
+    }
+
     val statusOngoing: String = when (availableLang) {
         BRAZILIAN_PORTUGUESE -> "Em andamento"
         SPANISH -> "En curso"
@@ -25,7 +31,7 @@ class HeanCmsIntl(lang: String) {
     val statusOnHiatus: String = when (availableLang) {
         BRAZILIAN_PORTUGUESE -> "Em hiato"
         SPANISH -> "En hiatus"
-        else -> "Ongoing"
+        else -> "On Hiatus"
     }
 
     val statusDropped: String = when (availableLang) {
@@ -62,6 +68,12 @@ class HeanCmsIntl(lang: String) {
         BRAZILIAN_PORTUGUESE -> "Data de criação"
         SPANISH -> "Añadido recientemente"
         else -> "Recently added"
+    }
+
+    val filterWarning: String = when (availableLang) {
+        BRAZILIAN_PORTUGUESE -> "Os filtros serão ignorados se a busca não estiver vazia."
+        SPANISH -> "Los filtros serán ignorados si la búsqueda no está vacía."
+        else -> "Filters will be ignored if the search is not empty."
     }
 
     fun urlChangedError(sourceName: String): String = when (availableLang) {
